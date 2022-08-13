@@ -1,0 +1,158 @@
+;--------------------------------------------------------------------------
+;File Name     		: grove_led_bar.mac
+;Version 			: 1.0
+;Created Date		: 21/12/2016
+;Last Update		: 21/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Macros to control the Grove LED bar
+;					  	 	
+;
+;Reference/datasheet: MY9221 LED controlling chip, http://wiki.seeed.cc/Grove-LED_Bar/
+;--------------------------------------------------------------------------	
+
+
+
+
+;-------------------------------------------------------------------------- 
+;control the 10 LEDs of LED bar by following the 10 bits of the parameter 
+;1->ON LED, 0->OFF LED 
+;-------------------------------------------------------------------------- 
+%macro set_led_bar 	1 
+push ecx
+push edx
+
+
+xor  edx, edx 			;clear the EDX register value
+add  edx, %1			;add the 1st parameter to EDX register
+
+
+ror edx, 10				;rotate the LED bar control data to right by 10 bits, the MSB is the 10th LED
+add edx, 0x0			;append the command data to bit 13th, all set as 0 (Pls refer to MY9221 datasheet for the setting)
+rol edx, 12				;bit[12]=>command data, bit[11:2] (channel 2 to 10)=>control each LED individually, 
+						;bit[0] and bit[1] (channel 1 & 2) are not connected to any LEDs 
+
+						
+mov ecx, 0d13			;loop 13 times (1st is the command data, then 12 channels LED)
+
+%%send:					;local label in macro
+
+push edx
+and edx, 0x1000
+
+jz %%zero
+
+data_all_high			;highest PWM (fully on the LED)
+
+jmp %%cont
+
+%%zero:
+
+data_all_low			;lowest PWM (fully off the LED)
+
+%%cont:
+
+pop edx					;restore the edx value
+shl edx , 1				;shl the EDX register to left by 1 bit, 
+
+dec ecx					;for the loop
+jnz %%send				;jump to local label %%send if the ecx register is not zero
+
+data_latch				;control the MY9221 device internal-latch function 
+						;to load the sent data into latch register	
+
+pop edx
+pop ecx
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------
+%macro data_high 0													;IO 6 (data line)
+	set_cyp_io_pin     			Port_1_out,  0b0000_0001			;Switch ON IO6	(port_1, bit_0)
+%endmacro 
+
+
+%macro data_low 0													;IO 6 (data line)
+	unset_cyp_io_pin   			Port_1_out,  0b1111_1110			;Switch OFF IO6	(port_1, bit_0)
+%endmacro 
+
+
+%macro clk_high 0													;IO 7 (clock line)
+	set_cyp_io_pin     			Port_1_out,  0b0000_1000			;Switch ON IO7  (port_1, bit_3)
+%endmacro 
+
+	
+%macro clk_low 0													;IO 7 (clock line)
+	unset_cyp_io_pin     		Port_1_out,  0b1111_0111			;Switch OFF IO7 (port_1, bit_3)
+%endmacro 
+
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- 
+%macro data_all_high  0			;highest PWM (fully on the LED)
+push ecx
+
+mov ecx, 0d8
+%%high:
+data_high
+clk_high
+data_high
+clk_low
+
+dec ecx
+jnz %%high
+
+pop ecx
+%endmacro 
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------
+%macro data_all_low  0			;lowest PWM (fully off the LED)
+push ecx
+
+mov ecx, 0d8
+%%low:
+data_low
+clk_high
+data_low
+clk_low
+
+dec ecx
+jnz %%low
+
+pop ecx
+%endmacro 
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------
+;control the MY9221 device internal-latch function 
+;to load the sent data into latch register	
+;--------------------------------------------------------------------------
+%macro data_latch  0
+push ecx
+
+mov ecx , 4
+
+%%l1:
+push ecx
+data_high
+
+data_low
+
+pop ecx
+loop %%l1
+
+pop ecx
+%endmacro 
+;--------------------------------------------------------------------------	

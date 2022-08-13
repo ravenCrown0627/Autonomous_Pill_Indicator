@@ -1,0 +1,19 @@
+;--------------------------------------------------------------------------
+;File Name     		: adafruit_motor_shield_v2.mac
+;Version 			: 1.1
+;Created Date		: 13/12/2016
+;Last Update		: 16/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Macros to setup Grove-I2C-ADC	 	
+;
+;Hardware 			: Adafruit Motor Shield Board 2.0
+;
+;Reference/datasheet: Texas Instrument ADC121C021 (12-Bit Analog-to-Digital Converter with Alert Function)
+;					  Grove - I2C ADC (http://wiki.seeed.cc/Grove-I2C_ADC/)
+;--------------------------------------------------------------------------	
+
+
+
+;--------------------------------------------------------------------------
+ADC_ADDRESS			EQU 	0x50		;Default I2C slave address of Grove I2C ADC
+;--------------------------------------------------------------------------

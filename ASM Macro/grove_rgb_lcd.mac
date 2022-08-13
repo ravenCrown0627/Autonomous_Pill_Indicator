@@ -1,0 +1,53 @@
+;--------------------------------------------------------------------------
+;File Name     		: grove_rgb_lcd.mac
+;Version 			: 1.1
+;Created Date		: 13/12/2016
+;Last Update		: 16/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Setup the LCD  	 	
+;
+;Hardware 			: Grove RGB Backlight LCD
+;
+;Reference/datasheet: Hitachi HD44780 LCD controller datasheet, NXP PCA9633 (control RGB LED),
+;					  http://wiki.seeed.cc/Grove-LCD_RGB_Backlight/	  
+;					 
+;--------------------------------------------------------------------------	
+
+
+
+
+;macro to initialize Grove RGB backlight LCD 
+;--------------------------------------------------------------------------I2C Devices Slave Address
+LCD_ADDRESS			EQU 	0x3E			;
+RGB_ADDRESS 		EQU 	0x62			;Grove LCD RGB LED
+;--------------------------------------------------------------------------
+
+
+;--------------------------------------------------------------------------Grove RGB LCD's LED color
+blue				EQU		0x201
+green				EQU		0x204
+red					EQU		0x210	
+cyan				EQU		0x205
+magenta				EQU		0x211
+yellow				EQU		0x214
+white				EQU		0x255
+;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------Macro to control LCD RGB led 
+%macro lcd_rgb_on 1									;one parameter
+	call check
+	
+	mov [i2c_bar+ IC_DATA_CMD]	, dword 0x00000000	;no auto increament (Mode 1)
+	mov [i2c_bar+ IC_DATA_CMD]	, dword 0x00000281	;change Mode 1 -> normal mode (ON LED)
+
+
+	mov [i2c_bar+ IC_DATA_CMD]	, dword 0x00000008	;
+	mov [i2c_bar+ IC_DATA_CMD]	, dword %1;		    ;send color configuration number, 
+													;refer to Macro above to set different color
+													
+	call delay_short
+
+%endmacro
+;--------------------------------------------------------------------------

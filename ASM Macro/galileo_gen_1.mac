@@ -1,0 +1,145 @@
+;--------------------------------------------------------------------------
+;File Name     		: galileo_gen_1.mac
+;Version 			: 1.1
+;Created Date		: 28/11/2016
+;Last Update		: 16/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Setup the Intel Quark SoC X1000 register value 	 	
+;
+;Hardware 			: Intel Galileo Gen 1 
+;--------------------------------------------------------------------------	
+
+
+
+;--------------------------------------------------------------------------	
+;macro to initialise Intel Quark SoC register value 
+;and Galileo board components 
+;--------------------------------------------------------------------------Base address register
+gpio_bar			EQU		0x90006000 		;[BAR1] - GPIO
+i2c_bar  			EQU 	0x90007000		;[BAR0] - I2C
+GBA					EQU		0x1080			;GPIO_BASE_ADDRESS, Legacy GPIO
+;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------I2C controller register
+IC_ENABLE 			EQU 	6Ch				;Enable 
+IC_STATUS 			EQU 	70h				;Status
+IC_ENABLE_STATUS 	EQU 	9Ch				;Enable Status
+IC_CON				EQU 	0h				;Control Register
+IC_TAR				EQU 	4h				;Master Target Address 
+IC_DATA_CMD			EQU 	10h				;Data Buffer and Command
+IC_INTR_STAT		EQU 	2Ch				;Interrupt Status
+IC_RAW_INTR_STAT	EQU 	34h				;Raw Interrupt Status
+IC_TX_TL			EQU 	38h				;Receive FIFO Threshold Level 
+
+
+;--------------------------------------------------------------------------I2C controller register
+GPIO_SWPORTA_DR				EQU 0h			;Port A Data 
+GPIO_SWPORTA_DDR			EQU 4h			;Port A Data Direction
+GPIO_EXT_PORTA				EQU 50h			;Port A External Port
+
+
+
+CGEN					EQU	0x0			;Core Well GPIO Enable
+CGIO					EQU	0x4			;Core Well GPIO Input/Output Select
+CGLVL					EQU	0x8			;Core Well GPIO Level for Input or Output 	
+
+
+RGLVL					EQU 0x28		;Resume Well GPIO Level for Input or Output
+
+; ;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------I2C Devices Slave Address
+IO_expander_ADDR	EQU 	0x20			;Cypress I/O Expander, on the Intel Galileo Gen 1
+;--------------------------------------------------------------------------
+
+
+
+;-------------------------------------------------------------------------- 
+; setup SoC i2c controller 
+; Refer to datasheet "   " Section: 19.5.1 I2C* Controller Memory Mapped Registers
+;--------------------------------------------------------------------------	
+%macro setup_soc_i2c_controller 1
+	mov [i2c_bar + IC_ENABLE]	, dword 0x00000000			; 1. Disable i2c controller before setup
+	mov [i2c_bar + IC_CON]		, dword 0x00000023			; 2. Configure i2c, Speed=100kHz												
+															
+	mov [i2c_bar + IC_TAR]		, dword %1					; 3. Configure Slave device 
+	
+	mov [i2c_bar + IC_TX_TL] 	, dword 0x000000ff			; 4. Configure transmit FIFO
+	
+	mov [i2c_bar + IC_ENABLE] 	, dword 0x00000001			; 5. Enable i2c controller
+	call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------
+%macro enable_i2c 0
+
+	push eax										
+	
+	setup_soc_i2c_controller    IO_expander_ADDR				; 1. Configure slave device = IO Expander
+	
+	cyp_io_expander_port_sel   	0x01							; 2. select Port 1
+	
+	unset_cyp_io_pin          	Port_1_pin_dir,	0b1101_1111		; 3. set pin direction	
+																;    change GPORT1_BIT5 to output	
+
+	set_cyp_io_pin_drive_mode	Strong,	      	0b0010_0000		; 4. set drive mode to strong
+
+	unset_cyp_io_pin   			Port_1_out,  	0b1101_1111		; 5. set Cypress IO expander Port1_Bit5 to 0 
+	
+    pop eax
+
+%endmacro	
+;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------
+%macro enable_io_10 0
+
+	push eax										
+	
+	setup_soc_i2c_controller    IO_expander_ADDR				; 1. Configure slave device = IO Expander
+	
+	cyp_io_expander_port_sel   	0x03							; 2. select Port 3
+	
+	unset_cyp_io_pin          	Port_3_pin_dir,	0b1011_1111		; 3. set pin direction	
+																;    change GPORT3_BIT6 to output	
+
+	set_cyp_io_pin_drive_mode	Strong,	      	0b0100_0000		; 4. set drive mode to strong
+
+	set_cyp_io_pin   			Port_3_out,  	0b0100_0000		; 5. set Cypress IO expander Port3_Bit6 to 1 
+	
+    pop eax
+
+%endmacro	
+;--------------------------------------------------------------------------
+
+
+
+;--------------------------------------------------------------------------
+%macro enable_io_11 0
+
+	push eax										
+	
+	setup_soc_i2c_controller    IO_expander_ADDR				; 1. Configure slave device = IO Expander
+	
+	cyp_io_expander_port_sel   	0x03							; 2. select Port 3
+	
+	unset_cyp_io_pin          	Port_3_pin_dir,	0b0111_1111		; 3. set pin direction	
+																;    change GPORT3_BIT7 to output	
+
+	set_cyp_io_pin_drive_mode	Strong,	      	0b1000_0000		; 4. set drive mode to strong
+
+	set_cyp_io_pin   			Port_3_out,  	0b1000_0000		; 5. set Cypress IO expander Port3_Bit7 to 1 
+	
+    pop eax
+
+%endmacro	
+;--------------------------------------------------------------------------

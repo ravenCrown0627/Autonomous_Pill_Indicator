@@ -1,0 +1,170 @@
+;--------------------------------------------------------------------------
+;File Name     		: galileo_gen_1.mac
+;Version 			: 1.1
+;Created Date		: 28/11/2016
+;Last Update		: 16/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Setup the Cypress CY8C9540A IO expander register value
+;					  Macros to setup each pin as input or output  	 	
+;
+;Reference/datasheet: Cypress CY8C9540A (20-, 40- and 60-Bit I/O Expander with EEPROM)
+;					  Intel Galileo I/O Mappings
+;--------------------------------------------------------------------------	
+
+
+
+;-------------------------------------------------------------------------- Macro to initialize Cypress IO Expander Register Name
+
+Extern Port_0_out, Port_1_out, Port_2_out, Port_3_out, Port_4_out, Port_5_out
+Extern Port_0_int_mask, Port_1_int_mask, Port_2_int_mask, Port_3_int_mask, Port_4_int_mask, Port_5_int_mask
+Extern Port_0_pwm, Port_1_pwm, Port_2_pwm, Port_3_pwm, Port_4_pwm, Port_5_pwm
+Extern Port_0_inv, Port_1_inv, Port_2_inv, Port_3_inv, Port_4_inv, Port_5_inv
+Extern Port_0_pin_dir, Port_1_pin_dir, Port_2_pin_dir, Port_3_pin_dir, Port_4_pin_dir, Port_5_pin_dir  	
+
+
+Extern check
+
+
+
+Port_Sel		EQU		0x18
+
+Pull_Up			EQU		0x1D
+Pull_Down		EQU		0x1E
+Open_Drain_Low	EQU		0x1F
+Open_Drain_High	EQU		0x20
+Strong			EQU		0x21
+Slow_Strong		EQU		0x22
+High_Z			EQU		0x23
+
+
+PWM_Sel			EQU		0x28
+Config_PWM		EQU		0x29
+Period_PWM		EQU		0x2A
+Pulse_width_PWM	EQU		0x2B
+Prog_Divider	EQU		0x2C
+En_WDE			EQU		0x2D
+Device_ID		EQU		0x2E
+Watchdog		EQU		0x2F
+Command			EQU		0x30
+;--------------------------------------------------------------------------
+
+
+
+;-------------------------------------------------------------------------- setup Cypress IO Expander Port Number
+%macro cyp_io_expander_port_sel 1
+	push eax
+	
+	mov [i2c_bar + IC_DATA_CMD]	, dword Port_Sel	;port select register
+	mov al, %1										;port number	
+	and eax, 0xff	
+	or  eax, 0x200 	
+	mov [i2c_bar + IC_DATA_CMD]	, eax				;
+	
+	pop eax
+	call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+;-------------------------------------------------------------------------- setup I/O expander Pin Direction
+%macro set_cyp_io_pin		2
+
+	push eax
+	push ebx
+
+	
+    mov al, [%1]									;get port data from memory
+	or 	al, %2										;OR operation with the new data
+	mov [%1], al									;store the data back to memory
+	or 	ax, 0x200									;OR operation, change bit[10] to 1, 
+													;to tell I2C controller add stop command  	
+
+	mov bx, [%1 + 0x1]								;get port number
+													;make sure the data is moved to BX register 
+	
+	;and bx, 0xff									;uncomment this line if the data is moved to BL register
+	
+	mov [i2c_bar + IC_DATA_CMD]	, dword ebx			;set register address (Cypress CY8C9540A datasheet)
+	mov [i2c_bar + IC_DATA_CMD]	, dword eax			;send new output data to output port  
+	
+	
+	pop ebx
+	pop eax
+	call check
+	
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+;-------------------------------------------------------------------------- setup I/O expander Pin Direction
+%macro unset_cyp_io_pin		2
+
+	push eax
+	push ebx
+
+	mov al, [%1]										;get port data from memory
+	and al, %2											;OR operation with the new data
+	mov [%1], al										;store the data back to memory
+	or ax, 0x200										;OR operation, change bit[10] to 1,
+														;to tell I2C controller add stop command  
+														
+	mov bx, [%1 + 0x1]									;get register address number
+														;make sure the data is moved to BX register 
+	
+	;and bx, 0xff										;uncomment this line is the data is moved to BL register		
+	
+	mov [i2c_bar + IC_DATA_CMD]	, dword ebx				;set register address (Cypress CY8C9540A datasheet)
+	mov [i2c_bar + IC_DATA_CMD]	, dword eax				;send new output data to output port	  
+	
+	pop ebx
+	pop eax
+	
+	call check
+
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- setup I/O expander Pin Direction
+%macro set_cyp_io_pin_drive_mode 2
+
+	push eax
+	
+	
+	mov  al, %2										;move second parameter to AL register
+	and eax, 0xff									;		
+	or 	eax, 0x200									;
+	
+	mov [i2c_bar + IC_DATA_CMD]	, dword %1			;set drive mode register address
+	mov [i2c_bar + IC_DATA_CMD]	, dword eax			;configure drive mode 	 
+	
+	pop eax
+	call check
+	
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- read port input data
+%macro read_cyp_io_input 1
+	
+	mov [i2c_bar + IC_DATA_CMD]	, dword %1		 	;read port input data
+	mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000300 	;stop and read data
+	
+	call delay_1_53ms
+	
+	mov edx,	[i2c_bar + IC_DATA_CMD]  			;move input data to EDX register
+	
+	call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+

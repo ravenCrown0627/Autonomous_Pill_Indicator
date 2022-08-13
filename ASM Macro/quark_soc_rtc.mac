@@ -1,0 +1,221 @@
+;--------------------------------------------------------------------------
+;File Name     		: quark_soc_rtc.mac
+;Version 			: 1.0
+;Created Date		: 21/12/2016
+;Last Update		: 22/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Macros to use the Intel Quark X1000 SoC on-cip RTC	 	
+;
+;
+;Reference/datasheet: Intel Quark X1000 SoC datasheet section 21.10 - RTC
+;					  					 
+;--------------------------------------------------------------------------	
+
+
+
+
+;--------------------------------------------------------------------------	RTC Index Register and Target Register
+index_reg		equ		0x74		;for RTC
+target_reg		equ		0x75
+
+
+
+;--------------------------------------------------------------------------	RTC Index register value 
+seconds_reg		equ		0x00
+minutes_reg		equ		0x02
+hours_reg		equ		0x04
+day_week_reg	equ		0x06
+day_month_reg	equ		0x07
+month_reg		equ		0x08
+year_reg		equ		0x09
+
+reg_a_reg		equ		0x0A
+reg_b_reg 		equ		0x0B
+reg_c_reg		equ		0x0C
+reg_d_reg		equ		0x0D
+
+
+;--------------------------------------	reg A and reg B prereg value 
+;									 	please refer to Quark SOC X1000 datasheet section 21.10 to change the regtings
+reg_a			equ		0x2F
+reg_b 			equ		0x42
+
+;--------------------------------------------------------------------------	
+
+
+
+
+
+
+;--------------------------------------------------------------------------	Macro to reg RTC
+;sec - min - hour - day_of_week - day_of_month - month - year
+
+%macro reg_rtc 7
+push eax
+
+seconds			equ		%1
+minutes			equ		%2
+hours			equ		%3
+day_week		equ		%4
+day_month		equ		%5
+month			equ		%6
+year			equ		%7
+
+
+;--------------------------------------invoke macro to start the update process
+rtc_update_start
+
+
+;--------------------------------------seconds
+mov ax, seconds_reg			;second	(index register)
+out index_reg, ax 
+
+mov ax, seconds				;second (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------minutes
+mov ax, minutes_reg			;minutes (index register)
+out index_reg, ax 
+
+mov ax, minutes				;minutes (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------hours
+mov ax, hours_reg			;hours (index register)
+out index_reg, ax 
+
+mov ax, hours				;hours(data)
+out target_reg, ax			;write to the reg
+
+;--------------------------------------Day of week
+mov ax, day_week_reg		;day of week (index register)
+out index_reg, ax 
+
+mov ax, day_week			;day of week (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------Day of month
+mov ax, day_month_reg		;day of month (index register)
+out index_reg, ax 
+
+mov ax, day_month			;day of month (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------Month
+mov ax, month_reg			;month (index register)
+out index_reg, ax 
+
+mov ax, month				;month (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------Year
+mov ax, year_reg			;year (index register)
+out index_reg, ax 
+
+mov ax, year				;year (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------Register A
+mov ax, reg_a_reg			;reg A(index register)
+out index_reg, ax 
+
+mov ax, reg_a				;reg A (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------Register b
+mov ax, reg_b_reg			;reg B(index register)
+out index_reg, ax 
+
+mov ax, reg_b				;reg B (data)
+out target_reg, ax			;write to the reg
+
+
+;--------------------------------------invoke macro to stop the update process
+rtc_update_stop
+
+
+pop eax
+%endmacro
+;--------------------------------------------------------------------------	
+
+
+
+
+;--------------------------------------------------------------------------	
+;macro that reg Update in progress (UIP) bit to 1
+
+%macro rtc_update_start 0
+push eax
+
+mov ax, reg_a_reg			;reg A(index register)
+out index_reg, ax 
+
+in ax, target_reg		
+or ax, 0x0008				;reg Update in progress (UIP) bit to 1
+
+out target_reg, ax			;write to the reg
+
+pop eax
+%endmacro
+;--------------------------------------------------------------------------	
+
+
+
+
+;--------------------------------------------------------------------------	
+;macro that reg Update in progress (UIP) bit to 0
+
+%macro rtc_update_stop 0
+push eax
+
+mov ax, reg_a_reg			;reg A(index register)
+out index_reg, ax 
+
+in ax, target_reg		
+and ax, 0xFFF7				;clear Update in progress (UIP) bit to 0
+
+out target_reg, ax			;write to the reg
+
+pop eax
+%endmacro
+;--------------------------------------------------------------------------	
+
+
+
+;-------------------------------------------------------------------------- 
+;pass RTC register value as a parameter to this macro to get the specific RTC 
+;registers value (eg: minutes_reg, seconds_reg), and then print the value to LCD	
+
+%macro print_rtc 1
+push eax
+push edx
+
+call lcd_data								; Configure LCD to start display data
+mov ax, %1
+out index_reg, ax 
+
+in ax, target_reg
+push ax
+ror ax, 4
+mov dx, ax
+call conv_hex_2_ascii
+call lcd_write	
+
+pop ax
+ror ax, 8
+mov dx, ax
+call conv_hex_2_ascii
+call lcd_write_stop	
+
+pop edx
+pop eax
+
+%endmacro
+;--------------------------------------------------------------------------	

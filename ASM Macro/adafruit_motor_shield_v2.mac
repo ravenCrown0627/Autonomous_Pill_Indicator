@@ -1,0 +1,245 @@
+;--------------------------------------------------------------------------
+;File Name     		: adafruit_motor_shield_v2.mac
+;Version 			: 1.1
+;Created Date		: 13/12/2016
+;Last Update		: 16/12/2016
+;Authors   			: Tan Chee Phang, Dr. Fakhrul Zaman Rokhani
+;Description		: Macro to use the Port M1-M4 on the Adafruit Motor Shield V2, 
+;					  PWM output and polarity of each port can be set individually 	 	
+;
+;Hardware 			: Adafruit Motor Shield Board 2.0
+;
+;Reference/datasheet: Adafruit Motor Shield V2.0 Schematic Diagram, NXP PCA9685, 
+;					  Toshiba TB6612FNG (Driver IC for Dual DC motor) 
+;
+;--------------------------------------------------------------------------	
+
+
+
+
+;-------------------------------------------------------------------------- PCA9685 Register Value
+;Please refer to Adafruit Motor Shield V2.0 Schematic Diagram
+;--------------------------------------------------------------------------
+
+MOTOR_ADDR 		EQU	0x60				; Default i2c slave address
+
+
+M1_AIN_1		EQU	0x2E
+M1_AIN_2		EQU 0x2A
+M1_PWM			EQU 0x26
+
+
+M2_BIN_1		EQU 0x36
+M2_BIN_2		EQU 0x32
+M2_PWM			EQU 0x3A
+
+
+M3_BIN_1		EQU	0x1A
+M3_BIN_2		EQU 0x1E
+M3_PWM			EQU 0x22
+
+
+M4_AIN_1		EQU 0x12
+M4_AIN_2		EQU 0x16
+M4_PWM			EQU 0x0E
+
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------	setup PCA9685 mode 1 register
+%macro setup_motor_shield  0 
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x000002A1	; mode 1 , auto increment
+call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- Port M1
+%macro M1_forward  0
+Motor_on 	M1_AIN_1
+Motor_off 	M1_AIN_2
+%endmacro
+
+
+
+%macro M1_backward  0
+Motor_on 	M1_AIN_2
+Motor_off 	M1_AIN_1
+%endmacro
+
+
+
+%macro M1_fully_on  0
+Motor_on 	M1_PWM
+%endmacro
+
+
+
+%macro M1_fully_off  0
+Motor_off 	M1_PWM
+%endmacro
+
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------Port M2
+%macro M2_forward  0
+Motor_on 	M2_BIN_1
+Motor_off 	M2_BIN_2
+%endmacro
+
+
+
+%macro M2_backward  0
+Motor_on 	M2_BIN_2
+Motor_off 	M2_BIN_1
+%endmacro
+
+
+
+%macro M2_fully_on 0
+Motor_on 	M2_PWM
+%endmacro
+
+
+
+
+%macro M2_fully_off 0
+Motor_off 	M2_PWM
+%endmacro
+
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------Port M3
+%macro M3_forward  0
+Motor_on 	M3_BIN_1
+Motor_off 	M3_BIN_2
+%endmacro
+
+
+
+%macro M3_backward  0
+Motor_on 	M3_BIN_2
+Motor_off 	M3_BIN_1
+%endmacro
+
+
+
+%macro M3_fully_on  0
+Motor_on 	M3_PWM
+%endmacro
+
+
+
+%macro M3_fully_off 0
+Motor_off 	M3_PWM
+%endmacro
+
+;--------------------------------------------------------------------------
+
+
+
+
+;--------------------------------------------------------------------------Port M4
+%macro M4_forward  0
+Motor_on 	M4_AIN_1
+Motor_off 	M4_AIN_2
+%endmacro
+
+
+%macro M4_backward  0
+Motor_on 	M4_AIN_2
+Motor_off 	M4_AIN_1
+%endmacro
+
+
+%macro M4_fully_on  0
+Motor_on 	M4_PWM
+%endmacro
+
+
+%macro M4_fully_off  0
+Motor_off 	M4_PWM
+%endmacro
+
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- Motor_on
+%macro Motor_on   1								; one parameter, the pin input of each of the port number M1-M4 
+												; fully switch off the port 	
+mov [i2c_bar + IC_DATA_CMD]	, dword %1			; 
+
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000010	;
+
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000200	;
+
+call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+
+;-------------------------------------------------------------------------- Motor_off
+%macro Motor_off   1							; one parameter, the pin input of each of the port number M1-M4 
+												; fully switch off the port 	
+mov [i2c_bar + IC_DATA_CMD]	, dword %1         	;  
+
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+	
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000	;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000200	;
+
+call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+
+
+;-------------------------------------------------------------------------- Motor_pwm
+%macro Motor_pwm   2								;two parameters 
+													;1st parameter is M1-M4_PWM,  second parameter is PWM value (0-4095)
+push eax
+push ebx
+
+mov [i2c_bar + IC_DATA_CMD]	, dword %1				;
+
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000		;
+mov [i2c_bar + IC_DATA_CMD]	, dword 0x00000000		;
+
+mov eax, %2												
+mov ebx, eax
+and eax, 0x00ff
+and ebx, 0x0f00
+shr ebx, 8
+or  ebx, 0x0200 
+
+mov [i2c_bar + IC_DATA_CMD]	, dword eax				;
+mov [i2c_bar + IC_DATA_CMD]	, dword ebx  			;
+
+pop ebx
+pop edx 
+call check
+%endmacro
+;--------------------------------------------------------------------------
+
+
+

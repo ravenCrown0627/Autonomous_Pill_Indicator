@@ -1,0 +1,27 @@
+#connect to OpenOCD
+target remote localhost:3333
+
+	
+#halt the Intel Quark SoC
+monitor halt					
+
+
+#set longer timeout, 
+#larger ELF file need longer time to load
+set remotetimeout 20			
+
+
+#load the ELF file
+load '../ELF Files'/rtc+lcd.elf	
+	
+
+#set the EIP register
+monitor reg eip 0xe3ac0f0		
+
+
+#resume Intel Quark SoC
+monitor resume					
+
+
+
+
